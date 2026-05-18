@@ -1,0 +1,77 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Outfit:wght@300;400;500;600;700&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-gold: #E8A030;
+  --color-gold-light: #F0BC5E;
+  --color-gold-pale: #F5D08A;
+  --color-amber: #C47820;
+  --color-burnt: #8B4513;
+  --color-sienna: #A0522D;
+  --color-cream: #FAF3E0;
+  --color-cream2: #F5EDD0;
+  --color-parchment: #EDE0C4;
+  --color-espresso: #0E0A06;
+  --color-dark: #1A1208;
+  --color-dark2: #241A0A;
+  --color-dark3: #2E2010;
+  --color-warm-gray: #8A7D6A;
+  --color-warm-gray2: #6A5D4A;
+  --color-white: #FFFEF8;
+
+  --font-serif: "Cormorant Garamond", serif;
+  --font-sans: "Outfit", sans-serif;
+  --font-classic: "Libre Baskerville", serif;
+
+  --animate-fade-up: fadeUp 0.8s ease-out forwards;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility glass-morphism {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@layer base {
+  body {
+    @apply bg-espresso text-cream font-sans overflow-x-hidden antialiased;
+  }
+  
+  body::before {
+    content: '';
+    @apply fixed inset-0 pointer-events-none z-[1000] opacity-40;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-serif;
+  }
+}
+
+@layer components {
+  .display-title {
+    @apply font-serif text-[clamp(56px,8vw,120px)] font-light leading-[0.95] tracking-tight;
+  }
+
+  .display-md {
+    @apply font-serif text-[clamp(38px,5vw,72px)] font-light leading-[1.05] tracking-tight;
+  }
+
+  .eyebrow {
+    @apply font-sans text-[10px] font-semibold tracking-[4px] uppercase text-gold flex items-center gap-4 mb-6;
+  }
+
+  .eyebrow::before {
+    content: '';
+    @apply w-8 h-[1px] bg-gold opacity-60;
+  }
+
+  .body-text {
+    @apply text-[15px] leading-[1.85] text-cream/75 font-light max-w-[580px];
+  }
+}
