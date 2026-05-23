@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+@theme inline {
+  --color-background: #FFFDF9;
+  --color-foreground: #1a1a1a;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+
+  /* Rose */
+  --color-rose-50: #FFF0F5;
+  --color-rose-100: #FFD6E7;
+  --color-rose-200: #FFB3CF;
+  --color-rose-400: #F472A8;
+  --color-rose-600: #D4537E;
+  --color-rose-800: #993556;
+
+  /* Peach */
+  --color-peach-50: #FFF7F0;
+  --color-peach-100: #FFE8D0;
+  --color-peach-400: #F5A86A;
+  --color-peach-600: #E07B3A;
+
+  /* Sage */
+  --color-sage-50: #F0FAF5;
+  --color-sage-400: #5DCAA5;
+  --color-sage-600: #3B9E7E;
+
+  /* Warm Gray */
+  --color-warm-gray-50: #FFFDF9;
+  --color-warm-gray-100: #FBF8F3;
+  --color-warm-gray-200: #F0EDE8;
+  --color-warm-gray-400: #9B9590;
+
+  /* Gradient */
+  --background-image-gradient-rose: linear-gradient(135deg, #FFF0F5 0%, #FFF7F0 100%);
+}
+
+:root {
+  --background: #FFFDF9;
+  --foreground: #1a1a1a;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
