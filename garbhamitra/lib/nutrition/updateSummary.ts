@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { calculatePregnancySafeScore } from './score'
 import type { DailySummary, FoodLog, NutritionTargets } from '@/types'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 // Pairs of [summary_column, target_column, display_name]
 const NUTRIENT_PAIRS: Array<[keyof typeof ZERO_TOTALS, keyof NutritionTargets, string]> = [
@@ -26,14 +27,13 @@ const ZERO_TOTALS = {
   meal_count: 0,
 } as const
 
-export async function updateDailySummary(
+async function _updateSummary(
+  client: SupabaseClient,
   userId: string,
   date: string
 ): Promise<DailySummary> {
-  const supabase = await createClient()
-
   // 1. Fetch all food logs for the day
-  const { data: rawLogs, error: logsError } = await supabase
+  const { data: rawLogs, error: logsError } = await client
     .from('food_logs')
     .select('*')
     .eq('user_id', userId)
@@ -46,22 +46,22 @@ export async function updateDailySummary(
   // 2. Sum all nutritional values
   const totals = logs.reduce(
     (acc, log) => {
-      acc.total_calories   += log.calories    ?? 0
-      acc.total_protein_g  += log.protein_g   ?? 0
-      acc.total_iron_mg    += log.iron_mg     ?? 0
-      acc.total_calcium_mg += log.calcium_mg  ?? 0
-      acc.total_folate_mcg += log.folate_mcg  ?? 0
-      acc.total_b12_mcg    += log.b12_mcg     ?? 0
+      acc.total_calories    += log.calories     ?? 0
+      acc.total_protein_g   += log.protein_g    ?? 0
+      acc.total_iron_mg     += log.iron_mg      ?? 0
+      acc.total_calcium_mg  += log.calcium_mg   ?? 0
+      acc.total_folate_mcg  += log.folate_mcg   ?? 0
+      acc.total_b12_mcg     += log.b12_mcg      ?? 0
       acc.total_hydration_ml += log.hydration_ml ?? 0
-      acc.total_fiber_g    += log.fiber_g     ?? 0
-      acc.meal_count       += 1
+      acc.total_fiber_g     += log.fiber_g      ?? 0
+      acc.meal_count        += 1
       return acc
     },
     { ...ZERO_TOTALS }
   )
 
   // 3. Fetch user's nutrition targets
-  const { data: targetsRow } = await supabase
+  const { data: targetsRow } = await client
     .from('nutrition_targets')
     .select('*')
     .eq('user_id', userId)
@@ -94,7 +94,7 @@ export async function updateDailySummary(
   }
 
   // 7. Upsert into daily_summaries
-  const { data: upserted, error: upsertError } = await supabase
+  const { data: upserted, error: upsertError } = await client
     .from('daily_summaries')
     .upsert(
       {
@@ -112,6 +112,20 @@ export async function updateDailySummary(
 
   if (upsertError) throw new Error(`Summary upsert failed: ${upsertError.message}`)
 
-  // 8. Return updated summary
   return upserted as DailySummary
+}
+
+// Standard server-component version (reads cookies for auth)
+export async function updateDailySummary(userId: string, date: string): Promise<DailySummary> {
+  const supabase = await createClient()
+  return _updateSummary(supabase as unknown as SupabaseClient, userId, date)
+}
+
+// Admin / non-cookie version — pass any Supabase client (service role, anon, etc.)
+export async function updateDailySummaryWithClient(
+  client: SupabaseClient,
+  userId: string,
+  date: string
+): Promise<DailySummary> {
+  return _updateSummary(client, userId, date)
 }
