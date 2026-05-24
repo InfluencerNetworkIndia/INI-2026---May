@@ -25,8 +25,6 @@ export default function LoginPage() {
     return () => clearTimeout(t)
   }, [resendCooldown])
 
-  const fullPhone = `+91${phone.replace(/\D/g, '')}`
-
   async function sendOtp() {
     const digits = phone.replace(/\D/g, '')
     if (digits.length !== 10) {
@@ -36,18 +34,55 @@ export default function LoginPage() {
     setLoading(true)
     setError(null)
 
-    const { error: otpError } = await supabase.auth.signInWithOtp({
-      phone: fullPhone,
+    const res = await fetch('/api/auth/send-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: digits }),
     })
+    const data = await res.json()
 
     setLoading(false)
-    if (otpError) {
-      setError(otpError.message)
+    if (!res.ok) {
+      setError(data.error || 'Failed to send OTP')
       return
     }
     setStep('otp')
     setResendCooldown(30)
     setTimeout(() => otpRefs.current[0]?.focus(), 100)
+  }
+
+  async function verifyOtpWithToken(token: string) {
+    setLoading(true)
+    setError(null)
+
+    // Step 1: verify OTP with MSG91 and get a Supabase magic-link token
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: phone.replace(/\D/g, ''), otp: token }),
+    })
+    const result = await res.json()
+
+    if (!res.ok) {
+      setError(result.error || 'OTP verification failed')
+      setLoading(false)
+      return
+    }
+
+    // Step 2: exchange magic-link token for a real Supabase session
+    const { error: sessionErr } = await supabase.auth.verifyOtp({
+      email: result.email,
+      token: result.token,
+      type: 'email',
+    })
+
+    setLoading(false)
+    if (sessionErr) {
+      setError('Could not create session. Please try again.')
+      return
+    }
+
+    router.push(result.onboarding_completed ? '/dashboard' : '/onboarding')
   }
 
   async function verifyOtp() {
@@ -56,38 +91,7 @@ export default function LoginPage() {
       setError('Please enter the complete 6-digit OTP')
       return
     }
-    setLoading(true)
-    setError(null)
-
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      phone: fullPhone,
-      token,
-      type: 'sms',
-    })
-
-    setLoading(false)
-    if (verifyError) {
-      setError(verifyError.message)
-      return
-    }
-
-    if (!data.user) {
-      setError('Verification failed. Please try again.')
-      return
-    }
-
-    // Check if onboarding is complete
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.onboarding_completed) {
-      router.push('/dashboard')
-    } else {
-      router.push('/onboarding')
-    }
+    await verifyOtpWithToken(token)
   }
 
   function handleOtpChange(index: number, value: string) {
@@ -101,7 +105,6 @@ export default function LoginPage() {
       otpRefs.current[index + 1]?.focus()
     }
     if (digit && index === 5) {
-      // auto-verify when last digit entered
       const token = [...next].join('')
       if (token.length === 6) verifyOtpWithToken(token)
     }
@@ -118,40 +121,6 @@ export default function LoginPage() {
     if (pasted.length === 6) {
       setOtp(pasted.split(''))
       verifyOtpWithToken(pasted)
-    }
-  }
-
-  async function verifyOtpWithToken(token: string) {
-    setLoading(true)
-    setError(null)
-
-    const { data, error: verifyError } = await supabase.auth.verifyOtp({
-      phone: fullPhone,
-      token,
-      type: 'sms',
-    })
-
-    setLoading(false)
-    if (verifyError) {
-      setError(verifyError.message)
-      return
-    }
-
-    if (!data.user) {
-      setError('Verification failed. Please try again.')
-      return
-    }
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('onboarding_completed')
-      .eq('id', data.user.id)
-      .single()
-
-    if (profile?.onboarding_completed) {
-      router.push('/dashboard')
-    } else {
-      router.push('/onboarding')
     }
   }
 
