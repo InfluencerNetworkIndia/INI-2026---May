@@ -10,8 +10,8 @@ export async function proxy(request: NextRequest) {
 
   const response = await updateSession(request)
 
-  // Protect app routes
-  if (request.nextUrl.pathname.match(/^\/(dashboard|onboarding|log|history|profile)/)) {
+  // Protect app routes — use (\/|$) to avoid matching /login via the /log prefix
+  if (request.nextUrl.pathname.match(/^\/(dashboard|onboarding|log|history|profile)(\/|$)/)) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
