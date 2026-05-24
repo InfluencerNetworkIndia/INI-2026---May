@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/reminders?type=morning",         "schedule": "30 2 * * *" },
+    { "path": "/api/reminders?type=hydration",       "schedule": "30 9 * * *" },
+    { "path": "/api/reminders?type=evening_summary", "schedule": "30 15 * * *" }
+  ]
+}
