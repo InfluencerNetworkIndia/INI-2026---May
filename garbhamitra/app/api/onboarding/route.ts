@@ -43,11 +43,6 @@ const OnboardingSchema = z.object({
   doctor_restrictions: z.string().optional(),
 })
 
-function getTrimester(week: number): 1 | 2 | 3 {
-  if (week <= 13) return 1
-  if (week <= 26) return 2
-  return 3
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,10 +59,9 @@ export async function POST(request: NextRequest) {
     }
 
     const d = parsed.data
-    const trimester = getTrimester(d.pregnancy_week)
     const today = new Date().toISOString().split('T')[0]
 
-    // 1. Upsert profile
+    // 1. Upsert profile — trimester is a GENERATED ALWAYS column, never set it manually
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .upsert({
@@ -82,7 +76,6 @@ export async function POST(request: NextRequest) {
         regional_cuisine: d.regional_cuisine ?? null,
         pregnancy_week: d.pregnancy_week,
         due_date: d.due_date ?? null,
-        trimester,
         onboarding_completed: true,
         updated_at: new Date().toISOString(),
       })
@@ -91,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) throw profileError
 
-    // 2. Upsert health_profile
+    // 2. Upsert health_profile (conflict on user_id unique column)
     const { data: healthProfile, error: healthError } = await supabase
       .from('health_profiles')
       .upsert({
@@ -113,14 +106,13 @@ export async function POST(request: NextRequest) {
         current_supplements: d.current_supplements,
         doctor_restrictions: d.doctor_restrictions ?? null,
         updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id)
+      }, { onConflict: 'user_id' })
       .select()
       .single()
 
     if (healthError) throw healthError
 
-    // 3. Calculate and save nutrition targets
+    // 3. Calculate and save nutrition targets (conflict on user_id unique column)
     const targetValues = calculateNutritionTargets(
       profile as Profile,
       healthProfile as HealthProfile
@@ -132,8 +124,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         ...targetValues,
         updated_at: new Date().toISOString(),
-      })
-      .eq('user_id', user.id)
+      }, { onConflict: 'user_id' })
       .select()
       .single()
 
