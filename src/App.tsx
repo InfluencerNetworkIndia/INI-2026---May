@@ -27,6 +27,12 @@ export default function App() {
               {item}
             </a>
           ))}
+          <a
+            href="/game"
+            className="text-[10px] text-gold hover:text-gold-light transition-colors tracking-[3px] uppercase border border-gold/40 px-3 py-1.5 rounded-full"
+          >
+            Play Game
+          </a>
         </div>
       </nav>
 
